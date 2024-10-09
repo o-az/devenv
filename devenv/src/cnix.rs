@@ -11,7 +11,7 @@ use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{event, Level};
+use tracing::{debug, error, info, warn, Level};
 
 pub struct Nix<'a> {
     pub options: Options<'a>,
@@ -283,7 +283,7 @@ impl<'a> Nix<'a> {
             .filter_map(|path_buf| path_buf.to_str())
             .collect();
         for path in paths {
-            event!(Level::INFO, "Deleting {}...", path);
+            info!("Deleting {}...", path);
             let args: Vec<&str> = ["store", "delete", path].to_vec();
             let cmd = self.prepare_command("nix", &args, &self.options);
             // we ignore if this command fails, because root might be in use
@@ -337,8 +337,7 @@ impl<'a> Nix<'a> {
                 cmd.arg("--debugger");
             }
             let error = cmd.exec();
-            event!(
-                Level::ERROR,
+            error!(
                 "Failed to replace shell with `{}`: {error}",
                 display_command(&cmd),
             );
@@ -411,8 +410,7 @@ impl<'a> Nix<'a> {
 
             if options.logging {
                 eprintln!();
-                event!(
-                    Level::ERROR,
+                error!(
                     "Command produced the following output:\n{}\n{}",
                     String::from_utf8_lossy(&result.stdout),
                     String::from_utf8_lossy(&result.stderr),
@@ -422,7 +420,7 @@ impl<'a> Nix<'a> {
             if self.global_options.nix_debugger
                 && cmd.get_program().to_string_lossy().ends_with("bin/nix")
             {
-                event!(Level::INFO, "Starting Nix debugger ...");
+                info!("Starting Nix debugger ...");
                 cmd.arg("--debugger").exec();
             }
 
@@ -454,11 +452,8 @@ impl<'a> Nix<'a> {
 
             match cachix_caches {
                 Err(e) => {
-                    event!(
-                        Level::WARN,
-                        "Failed to get cachix caches due to evaluation error"
-                    );
-                    event!(Level::DEBUG, "{}", e);
+                    warn!("Failed to get cachix caches due to evaluation error");
+                    debug!("{}", e);
                 }
                 Ok(cachix_caches) => {
                     push_cache = cachix_caches.caches.push.clone();
@@ -511,8 +506,7 @@ impl<'a> Nix<'a> {
                 new_cmd.current_dir(cmd.get_current_dir().unwrap_or_else(|| Path::new(".")));
                 return Ok(new_cmd);
             } else {
-                event!(
-                    Level::WARN,
+                warn!(
                     "CACHIX_AUTH_TOKEN is not set, but required to push to {}.",
                     push_cache
                 );
@@ -549,13 +543,10 @@ impl<'a> Nix<'a> {
         let mut cmd = match env::var("DEVENV_NIX") {
             Ok(devenv_nix) => std::process::Command::new(format!("{devenv_nix}/bin/{command}")),
             Err(_) => {
-                event!(Level::ERROR,
+                error!(
             "$DEVENV_NIX is not set, but required as devenv doesn't work without a few Nix patches."
             );
-                event!(
-                    Level::ERROR,
-                    "Please follow https://devenv.sh/getting-started/ to install devenv."
-                );
+                error!("Please follow https://devenv.sh/getting-started/ to install devenv.");
                 bail!("$DEVENV_NIX is not set")
             }
         };
@@ -581,7 +572,7 @@ impl<'a> Nix<'a> {
         cmd.current_dir(&self.devenv_root);
 
         if self.global_options.verbose {
-            event!(Level::DEBUG, "Running command: {}", display_command(&cmd));
+            debug!("Running command: {}", display_command(&cmd));
         }
         Ok(cmd)
     }
@@ -618,14 +609,11 @@ impl<'a> Nix<'a> {
                     }
                     let resp = request.send().await.expect("Failed to get cache");
                     if resp.status().is_client_error() {
-                        event!(Level::ERROR,
+                        error!(
                         "Cache {} does not exist or you don't have a CACHIX_AUTH_TOKEN configured.",
                         name
                     );
-                        event!(
-                            Level::ERROR,
-                            "To create a cache, go to https://app.cachix.org/."
-                        );
+                        error!("To create a cache, go to https://app.cachix.org/.");
                         bail!("Cache does not exist or you don't have a CACHIX_AUTH_TOKEN configured.")
                     } else {
                         let resp_json =
@@ -645,7 +633,7 @@ impl<'a> Nix<'a> {
                     .expect("Failed to parse JSON")
                     .trusted;
                 if trusted.is_none() {
-                    event!(Level::WARN,
+                    warn!(
                     "You're using very old version of Nix, please upgrade and restart nix-daemon.",
                 );
                 }
@@ -655,18 +643,12 @@ impl<'a> Nix<'a> {
                     "sudo launchctl kickstart -k system/org.nixos.nix-daemon"
                 };
 
-                event!(
-                    Level::INFO,
-                    "Using Cachix: {}",
-                    caches.caches.pull.join(", ")
-                );
+                info!("Using Cachix: {}", caches.caches.pull.join(", "));
                 if !new_known_keys.is_empty() {
                     for (name, pubkey) in new_known_keys.iter() {
-                        event!(
-                            Level::INFO,
+                        info!(
                             "Trusting {}.cachix.org on first use with the public key {}",
-                            name,
-                            pubkey
+                            name, pubkey
                         );
                     }
                     caches.known_keys.extend(new_known_keys);
@@ -680,7 +662,7 @@ impl<'a> Nix<'a> {
 
                 if trusted == Some(0) {
                     if !Path::new("/etc/NIXOS").exists() {
-                        event!(Level::ERROR, "{}", indoc::formatdoc!(
+                        error!("{}", indoc::formatdoc!(
                         "You're not a trusted user of the Nix store. You have the following options:
 
                         a) Add yourself to the trusted-users list in /etc/nix/nix.conf for devenv to manage caches for you.
@@ -706,7 +688,7 @@ impl<'a> Nix<'a> {
                     , caches.known_keys.values().cloned().collect::<Vec<String>>().join(" ")
                     ));
                     } else {
-                        event!(Level::ERROR, "{}", indoc::formatdoc!(
+                        error!("{}", indoc::formatdoc!(
                         "You're not a trusted user of the Nix store. You have the following options:
 
                         a) Add yourself to the trusted-users list in /etc/nix/nix.conf by editing configuration.nix for devenv to manage caches for you.
@@ -755,8 +737,7 @@ impl<'a> Nix<'a> {
 fn symlink_force(link_path: &Path, target: &Path) {
     let _lock = dotlock::Dotlock::create(target.with_extension("lock")).unwrap();
 
-    event!(
-        Level::DEBUG,
+    debug!(
         "Creating symlink {} -> {}",
         link_path.display(),
         target.display()
