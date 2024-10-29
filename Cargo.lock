@@ -561,6 +561,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-core",
  "tracing-subscriber",
  "which",
  "whoami",
