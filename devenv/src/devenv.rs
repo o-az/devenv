@@ -315,6 +315,7 @@ impl Devenv {
     ) -> Result<()> {
         let spec = self.container_build(name).await?;
 
+        // TODO: No newline
         let span = info_span!(
             "copying_container",
             user_message = format!("Copying {name} container")
@@ -429,6 +430,7 @@ impl Devenv {
         let (after_gc, _) = cleanup_symlinks(&self.devenv_home_gc);
         let end = std::time::Instant::now();
 
+        // TODO: newline before or after
         info!(
             "\nDone. Successfully removed {} symlinks in {}s.",
             to_gc_len - after_gc.len(),
@@ -506,6 +508,7 @@ impl Devenv {
             bail!("No tasks specified.");
         }
         let tasks_json_file = {
+            // TODO: No newline
             let span = info_span!("tasks_run", user_message = "Evaluating tasks");
             self.nix
                 .build(&["devenv.task.config"])
