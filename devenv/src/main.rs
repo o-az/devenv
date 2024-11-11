@@ -1,12 +1,10 @@
 use clap::crate_version;
 use devenv::{
     cli::{Cli, Commands, ContainerCommand, InputsCommand, ProcessesCommand, TasksCommand},
-    config, log, utils, Devenv,
+    config, log, Devenv,
 };
 use miette::Result;
-use std::fs::File;
 use std::io::BufWriter;
-use tracing::debug;
 use tracing::level_filters::LevelFilter;
 // use devenv::utils;
 
