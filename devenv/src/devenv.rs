@@ -1,4 +1,4 @@
-use super::{cli, cnix, config, log, tasks};
+use super::{cli, cnix, config, tasks};
 use clap::crate_version;
 use cli_table::Table;
 use cli_table::{print_stderr, WithTitle};
@@ -274,7 +274,7 @@ impl Devenv {
             None => "Updating devenv.lock".to_string(),
         };
 
-        let span = info_span!("update", user_message = msg);
+        let span = info_span!("update", devenv.user_message = msg);
         self.nix.update(input_name).instrument(span).await?;
 
         Ok(())
@@ -287,7 +287,7 @@ impl Devenv {
 
         let span = info_span!(
             "building_container",
-            user_message = format!("Building {name} container")
+            devenv.user_message = format!("Building {name} container")
         );
 
         async move {
@@ -318,7 +318,7 @@ impl Devenv {
         // TODO: No newline
         let span = info_span!(
             "copying_container",
-            user_message = format!("Copying {name} container")
+            devenv.user_message = format!("Copying {name} container")
         );
 
         async move {
@@ -368,7 +368,7 @@ impl Devenv {
 
         let span = info_span!(
             "running_container",
-            user_message = format!("Running {name} container")
+            devenv.user_message = format!("Running {name} container")
         );
 
         async move {
@@ -403,7 +403,7 @@ impl Devenv {
             // TODO: No newline
             let span = info_span!(
                 "cleanup_symlinks",
-                user_message = format!(
+                devenv.user_message = format!(
                     "Removing non-existing symlinks in {} ...",
                     &self.devenv_home_gc.display()
                 )
@@ -421,7 +421,8 @@ impl Devenv {
         {
             let span = info_span!(
                 "nix_gc",
-                user_message = "Running garbage collection (this process will take some time) ..."
+                devenv.user_message =
+                    "Running garbage collection (this process will take some time) ..."
             );
             info!("If you'd like this to run faster, leave a thumbs up at https://github.com/NixOS/nix/issues/7239");
             span.in_scope(|| self.nix.gc(to_gc))?;
@@ -509,7 +510,7 @@ impl Devenv {
         }
         let tasks_json_file = {
             // TODO: No newline
-            let span = info_span!("tasks_run", user_message = "Evaluating tasks");
+            let span = info_span!("tasks_run", devenv.user_message = "Evaluating tasks");
             self.nix
                 .build(&["devenv.task.config"])
                 .instrument(span)
@@ -545,7 +546,7 @@ impl Devenv {
 
         // collect tests
         let test_script = {
-            let span = info_span!("test", user_message = "Building tests");
+            let span = info_span!("test", devenv.user_message = "Building tests");
             self.nix.build(&["devenv.test"]).instrument(span).await?
         };
         let test_script = test_script[0].to_string_lossy().to_string();
@@ -554,7 +555,7 @@ impl Devenv {
             self.up(None, &true, &false).await?;
         }
 
-        let span = info_span!("test", user_message = "Running tests");
+        let span = info_span!("test", devenv.user_message = "Running tests");
         let result = async {
             debug!("Running command: {test_script}");
             let develop_args = self.prepare_develop_args(&Some(test_script), &[]).await?;
@@ -643,7 +644,10 @@ impl Devenv {
             bail!("No processes defined");
         }
 
-        let span = info_span!("build_processes", user_message = "Building processes");
+        let span = info_span!(
+            "build_processes",
+            devenv.user_message = "Building processes"
+        );
         let proc_script_string = async {
             let proc_script = self.nix.build(&["procfileScript"]).await?;
             let proc_script_string = proc_script[0]
@@ -656,7 +660,7 @@ impl Devenv {
         .instrument(span)
         .await?;
 
-        let span = info_span!("up", user_message = "Starting processes");
+        let span = info_span!("up", devenv.user_message = "Starting processes");
         async {
             let process = process.unwrap_or("");
 
@@ -837,7 +841,7 @@ impl Devenv {
         // TODO: figure out logging bool usage
 
         let gc_root = self.devenv_dot_gc.join("shell");
-        let span = tracing::info_span!("building_shell", user_message = "Building shell");
+        let span = tracing::info_span!("building_shell", devenv.user_message = "Building shell");
         let env = self.nix.dev_env(json, &gc_root).instrument(span).await?;
 
         std::fs::write(
