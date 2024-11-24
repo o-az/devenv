@@ -70715,6 +70715,137 @@ signed integer
 
 
 
+## services.tailscale.enable
+
+
+
+Whether to enable Tailscale serve service.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+` false `
+
+
+
+*Example:*
+` true `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
+## services.tailscale.serve
+
+
+
+Tailscale serve configurations
+
+
+
+*Type:*
+attribute set of (submodule)
+
+
+
+*Default:*
+` { } `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
+## services.tailscale.serve.\<name>.path
+
+
+
+Path to append to base URL
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+` null `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
+## services.tailscale.serve.\<name>.port
+
+
+
+Port to expose service on
+
+
+
+*Type:*
+null or signed integer
+
+
+
+*Default:*
+` null `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
+## services.tailscale.serve.\<name>.protocol
+
+
+
+Protocol to expose service with
+
+
+
+*Type:*
+one of “https”, “http”, “tcp”, “tls-terminated-tcp”
+
+
+
+*Default:*
+` "https" `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
+## services.tailscale.serve.\<name>.target
+
+
+
+Target for serve command (URL, file path, text content)
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+` null `
+
+*Declared by:*
+ - [https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix](https://github.com/cachix/devenv/blob/main/src/modules/services/tailscale.nix)
+
+
+
 ## services.temporal.enable
 
 
